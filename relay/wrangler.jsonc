@@ -10,9 +10,8 @@
     "vars": {
         "OWNER": "ByteZ1337",
         "RUNNER_REPO": "ByteZ1337/renovate",
-        // filled in after the apps exist, see README
-        "BOT_LOGIN": "",
-        "DISPATCHER_CLIENT_ID": ""
+        "BOT_LOGIN": "bytez-renovate[bot]",
+        "DISPATCHER_CLIENT_ID": "Iv23lidYsCKyCXHVd2O2"
     }
     // secrets, set with `wrangler secret put`: WEBHOOK_SECRET, DISPATCHER_PRIVATE_KEY
 }
