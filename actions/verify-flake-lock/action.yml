@@ -17,8 +17,8 @@ runs:
   steps:
     - uses: ByteZ1337/setup-nu@v1
       with:
-        version: 0.116.1
-        sha256: d6d8ace4be491ed8abba4026e73b60c0470b4671d7039307e7d772282ef863da
+        version: 0.117.0
+        sha256: 33b907da92b0e80bd10fea9fa0e8a1624cabfebd89ee2568e365da3c492ffc68
 
     - shell: bash
       env:
