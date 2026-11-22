@@ -1,0 +1,28 @@
+name: verify flake.lock
+description: Fails when a locked github input is not on the branch or tag it follows or newer than min-age
+
+inputs:
+  lockfile:
+    description: path to the lock file
+    default: flake.lock
+  min-age:
+    description: minimum age of every locked commit, as a nushell duration (e.g. 7day). 0sec = none
+    default: 0sec
+  token:
+    description: token for the GitHub API with read access to public repos
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - uses: ByteZ1337/setup-nu@v1
+      with:
+        version: 0.116.1
+        sha256: d6d8ace4be491ed8abba4026e73b60c0470b4671d7039307e7d772282ef863da
+
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        LOCKFILE: ${{ inputs.lockfile }}
+        MIN_AGE: ${{ inputs.min-age }}
+      run: nu "$GITHUB_ACTION_PATH/verify.nu" "$LOCKFILE" --min-age "$MIN_AGE"

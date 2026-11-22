@@ -1,0 +1,99 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Shared defaults, use with `local>ByteZ1337/renovate`",
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "* * 1 * *"
+  ],
+  "minimumReleaseAge": "7 days",
+  "internalChecksFilter": "strict",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "dependencyDashboard": {
+    "enabled": true
+  },
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "separateMajorMinor": false,
+  "nix": {
+    "enabled": false
+  },
+  "customDatasources": {
+    "github-branch-pushes": {
+      "description": "The commit of the newest push to a branch that is at least 7 days old, if that push is newer than the locked commit (currentValue is its lastModified). An empty digest otherwise, which Renovate drops quietly, so manual bumps are never rolled back",
+      "transformTemplates": [
+        "( $cutoff := $toMillis($now()) - 7 * 86400000; $old := $filter($, function($p) { $toMillis($p.timestamp) <= $cutoff }); $newer := $exists($old) and $toMillis($old[0].timestamp) > {{currentValue}} * 1000; { \"releases\": [ { \"version\": \"{{currentValue}}\", \"digest\": $newer ? $old[0].after : \"\", \"releaseTimestamp\": $newer ? $old[0].timestamp : $fromMillis({{currentValue}} * 1000) } ] } )"
+      ]
+    }
+  },
+  "customManagers": [
+    {
+      "description": "ByteZ1337/setup-nu pins",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/workflows/[^/]+\\.ya?ml$/",
+        "/(^|/)action\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "uses: (ByteZ1337/setup-nu@\\S+|\\./)\\s+(#.*\\s+)?with:\\s+version: ['\"]?(?<currentValue>\\d+\\.\\d+\\.\\d+)['\"]?\\s+sha256: (?<currentDigest>[0-9a-f]{64})"
+      ],
+      "datasourceTemplate": "github-release-attachments",
+      "depNameTemplate": "nushell/nushell"
+    },
+    {
+      "description": "Root github flake inputs that follow a branch",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)flake\\.lock$/"
+      ],
+      "matchStrings": [
+        "\"(?<depName>[A-Za-z0-9-]+)\": \\{\\s*(\"inputs\": \\{[^}]*\\},\\s*)?\"locked\": \\{\\s*\"lastModified\": (?<currentValue>\\d+),\\s*\"narHash\": \"[^\"]+\",\\s*\"owner\": \"(?<owner>[^\"]+)\",\\s*\"repo\": \"(?<repo>[^\"]+)\",\\s*\"rev\": \"(?<currentDigest>[0-9a-f]{40})\",\\s*\"type\": \"github\"\\s*\\},\\s*\"original\": \\{\\s*\"owner\": \"[^\"]+\",\\s*\"ref\": \"(?<ref>[^\"]+)\",\\s*\"repo\": \"[^\"]+\",\\s*\"type\": \"github\"\\s*\\}"
+      ],
+      "packageNameTemplate": "{{{owner}}}/{{{repo}}}",
+      "datasourceTemplate": "custom.github-branch-pushes",
+      "registryUrlTemplate": "https://api.github.com/repos/{{{owner}}}/{{{repo}}}/activity?ref=refs%2Fheads%2F{{{ref}}}&activity_type=push&per_page=100",
+      "depTypeTemplate": "flake-input"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github actions",
+      "semanticCommitScope": "ci"
+    },
+    {
+      "matchManagers": [
+        "cargo"
+      ],
+      "groupName": "crates"
+    },
+    {
+      "description": "the narHash can only come from nix, which writes the whole entry",
+      "matchDepTypes": [
+        "flake-input"
+      ],
+      "groupName": "flake inputs",
+      "semanticCommitScope": "nix",
+      "minimumReleaseAge": null,
+      "commitMessageTopic": "flake input {{depName}}",
+      "updateNotScheduled": false,
+      "postUpgradeTasks": {
+        "commands": [
+          "nix --extra-experimental-features 'nix-command flakes' flake lock --override-input {{{depName}}} github:{{{packageName}}}/{{{newDigest}}}"
+        ],
+        "fileFilters": [
+          "flake.lock"
+        ],
+        "executionMode": "update"
+      }
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": [
+      "security"
+    ]
+  },
+  "osvVulnerabilityAlerts": true
+}

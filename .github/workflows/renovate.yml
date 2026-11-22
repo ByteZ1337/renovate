@@ -1,0 +1,97 @@
+name: renovate
+
+on:
+  schedule:
+    # hourly in case relay is down
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: only process one repo (owner/name) or empty for all
+        type: string
+        default: ''
+
+permissions: {}
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    environment: renovate
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check input
+        id: scope
+        env:
+          REPO: ${{ inputs.repo }}
+        shell: bash
+        run: |
+          if [ -z "$REPO" ]; then
+            echo "repositories=" >> "$GITHUB_OUTPUT"
+          elif [[ "$REPO" =~ ^ByteZ1337/[A-Za-z0-9._-]+$ ]]; then
+            echo "repositories=$REPO" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::invalid repo input"
+            exit 1
+          fi
+
+      - name: Build image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: docker build --quiet --secret id=gh,env=GH_TOKEN --tag renovate-local .
+
+      - name: Cache key
+        id: key
+        run: echo "day=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache/restore@v6.1.0
+        with:
+          path: .cache/renovate
+          key: renovate-${{ steps.key.outputs.day }}
+          restore-keys: renovate-
+
+      - uses: actions/create-github-app-token@v3.3.0
+        id: token
+        with:
+          client-id: ${{ vars.RENOVATE_CLIENT_ID }}
+          private-key: ${{ secrets.RENOVATE_PRIVATE_KEY }}
+          owner: ByteZ1337
+
+      - name: Renovate
+        env:
+          RENOVATE_TOKEN: ${{ steps.token.outputs.token }}
+          REPOSITORIES: ${{ steps.scope.outputs.repositories }}
+        run: |
+          mkdir -p .cache/renovate
+          sudo chown -R 12021:0 .cache/renovate
+          scope=()
+          if [ -n "$REPOSITORIES" ]; then
+            scope=(-e RENOVATE_AUTODISCOVER=false -e RENOVATE_REPOSITORIES="$REPOSITORIES")
+          fi
+          docker run --rm \
+            -e RENOVATE_TOKEN \
+            -e RENOVATE_CONFIG_FILE=/config/config.js \
+            -e LOG_LEVEL=info \
+            "${scope[@]}" \
+            -v "$PWD/config.js:/config/config.js:ro" \
+            -v "$PWD/.cache/renovate:/cache" \
+            renovate-local
+
+      - name: Make cache readable
+        if: ${{ !cancelled() }}
+        run: sudo chmod -R a+rX .cache/renovate
+
+      - uses: actions/cache/save@v6.1.0
+        if: ${{ !cancelled() }}
+        with:
+          path: .cache/renovate
+          key: renovate-${{ steps.key.outputs.day }}

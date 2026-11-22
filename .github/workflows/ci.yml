@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      # same image the runner uses. makes a bad tool bump fail here first
+      - name: Build image
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: docker build --quiet --secret id=gh,env=GH_TOKEN --tag renovate-local .
+
+      - name: Validate configs
+        run: >
+          docker run --rm -v "$PWD:/repo:ro" -w /repo --entrypoint renovate-config-validator renovate-local
+          --strict --no-global renovate.json default.json automerge.json
+
+      - name: Validate global config
+        run: >
+          docker run --rm -v "$PWD:/repo:ro" -w /repo -e RENOVATE_CONFIG_FILE=/repo/config.js
+          --entrypoint renovate-config-validator renovate-local --strict
+
+      - name: Actions lockfile
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo -e GH_TOKEN --entrypoint gh renovate-local actions-lock --verify

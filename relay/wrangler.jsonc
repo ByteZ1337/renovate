@@ -1,0 +1,18 @@
+{
+    "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+    "name": "renovate-relay",
+    "main": "src/index.js",
+    "compatibility_date": "2026-11-01",
+    // Enforce WAF rule on domain
+    "workers_dev": false,
+    "preview_urls": false,
+    "observability": { "enabled": false },
+    "vars": {
+        "OWNER": "ByteZ1337",
+        "RUNNER_REPO": "ByteZ1337/renovate",
+        // filled in after the apps exist, see README
+        "BOT_LOGIN": "",
+        "DISPATCHER_CLIENT_ID": ""
+    }
+    // secrets, set with `wrangler secret put`: WEBHOOK_SECRET, DISPATCHER_PRIVATE_KEY
+}

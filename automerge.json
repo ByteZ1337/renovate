@@ -1,0 +1,13 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Opt-in auto-merge, use with `local>ByteZ1337/renovate:automerge`. Only for repos with a ruleset that requires CI, otherwise GitHub merges at once",
+  "automerge": true,
+  "platformAutomerge": true,
+  "automergeType": "pr",
+  "packageRules": [
+    { "matchUpdateTypes": ["major"], "automerge": false },
+    { "description": "flake.lock bumps are opaque hashes, always merge those by hand", "matchDepTypes": ["flake-input"], "automerge": false },
+    { "matchManagers": ["nix"], "automerge": false },
+    { "matchUpdateTypes": ["lockFileMaintenance"], "automerge": false }
+  ]
+}
