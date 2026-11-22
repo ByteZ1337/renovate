@@ -10,7 +10,7 @@
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
   "dependencyDashboard": {
-    "enabled": true
+    "enabled": false
   },
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
