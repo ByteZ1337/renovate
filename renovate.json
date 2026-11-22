@@ -1,6 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["local>ByteZ1337/renovate", "customManagers:dockerfileVersions"],
+  "schedule": "at any time",
   "packageRules": [
     {
       "matchFileNames": ["Dockerfile"],
