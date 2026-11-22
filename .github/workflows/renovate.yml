@@ -20,7 +20,9 @@ jobs:
   renovate:
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    environment: renovate
+    environment:
+      name: renovate
+      deployment: false
     permissions:
       contents: read
     steps:
