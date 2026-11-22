@@ -2,8 +2,7 @@ name: renovate
 
 on:
   schedule:
-    # hourly in case relay is down
-    - cron: '23 * * * *'
+    - cron: '23 4 * * *'
   workflow_dispatch:
     inputs:
       repo:
