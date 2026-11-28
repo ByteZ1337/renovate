@@ -8,7 +8,6 @@
     { "matchUpdateTypes": ["major"], "automerge": false },
     { "description": "flake.lock bumps are opaque hashes, always merge those by hand", "matchDepTypes": ["flake-input"], "automerge": false },
     { "matchManagers": ["nix"], "automerge": false },
-    { "matchManagers": ["mise", "rust-toolchain"], "automerge": false },
     { "matchUpdateTypes": ["lockFileMaintenance"], "automerge": false }
   ]
 }
