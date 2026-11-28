@@ -1,6 +1,7 @@
 {
     "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
     "name": "renovate-relay",
+    "account_id": "91b7ed72b58e80b1a615d2f6d6e1c88c",
     "main": "src/index.js",
     "compatibility_date": "2026-11-01",
     // Enforce WAF rule on domain
