@@ -1,0 +1,25 @@
+name: verify actions.lock
+description: Fails when .github/workflows/actions.lock does not match the workflows
+
+inputs:
+  token:
+    description: token for the GitHub API with read access to public repos
+    default: ${{ github.token }}
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        # renovate: datasource=github-releases depName=github/gh-actions-lock
+        GH_ACTIONS_LOCK_VERSION: v0.4.1
+      run: |
+        dir="$RUNNER_TEMP/gh-actions-lock"
+        mkdir -p "$dir"
+        gh release download "$GH_ACTIONS_LOCK_VERSION" --repo github/gh-actions-lock --pattern linux-amd64 --dir "$dir"
+        gh release verify-asset "$GH_ACTIONS_LOCK_VERSION" "$dir/linux-amd64" --repo github/gh-actions-lock
+        mv "$dir/linux-amd64" "$dir/gh-actions-lock"
+        chmod +x "$dir/gh-actions-lock"
+        (cd "$dir" && gh extension install .)
+        gh actions-lock --verify

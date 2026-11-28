@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+shopt -s inherit_errexit nullglob
+
+script="${1:?usage: run-signed <.renovate/script.sh> [args...]}"
+shift
+
+if [[ ! "$script" =~ ^\.renovate/[A-Za-z0-9._-]+\.sh$ ]]; then
+  echo "Rejected script path: $script" >&2
+  exit 1
+fi
+
+sig="$script.asc"
+if [[ -L .renovate || -L "$script" || -L "$sig" ]]; then
+  echo "Symlinks are not allowed for signed scripts" >&2
+  exit 1
+fi
+if [[ ! -f "$script" || ! -f "$sig" ]]; then
+  echo "Missing script or detached signature: $script / $sig" >&2
+  exit 1
+fi
+
+keys_dir="/etc/renovate/keys"
+fpr_file="$keys_dir/fingerprints"
+key_files=("$keys_dir"/*.asc)
+if [[ ! -f "$fpr_file" || ${#key_files[@]} -eq 0 ]]; then
+  echo "Missing trusted signing keys or fingerprints in $keys_dir" >&2
+  exit 1
+fi
+
+mapfile -t allowed_fprs < <(sed -E 's/#.*//; s/[[:space:]]+//g; /^$/d' "$fpr_file")
+if [[ ${#allowed_fprs[@]} -eq 0 ]]; then
+  echo "No trusted fingerprints configured in $fpr_file" >&2
+  exit 1
+fi
+for f in "${allowed_fprs[@]}"; do
+  if [[ ! "$f" =~ ^[0-9A-F]{40}$ ]]; then
+    echo "Invalid fingerprint entry in $fpr_file: $f" >&2
+    exit 1
+  fi
+done
+
+workdir="$(mktemp -d)"
+trap 'rm -rf "$workdir"' EXIT
+chmod 700 "$workdir"
+
+gnupghome="$workdir/gnupg"
+mkdir -p "$gnupghome"
+chmod 700 "$gnupghome"
+
+cp "$script" "$workdir/script.sh"
+cp "$sig" "$workdir/script.sh.asc"
+
+gpg --homedir "$gnupghome" --batch --quiet --import "${key_files[@]}"
+status="$(gpg --homedir "$gnupghome" --batch --status-fd=1 --verify "$workdir/script.sh.asc" "$workdir/script.sh")"
+
+validsig="$(grep -E '^\[GNUPG:\] VALIDSIG [0-9A-F]{40} ' <<< "$status" || true)"
+signer_fpr="$(awk '{print $NF}' <<< "$validsig")"
+if [[ ! "$signer_fpr" =~ ^[0-9A-F]{40}$ ]]; then
+  echo "GPG signature verification failed for $script" >&2
+  echo "$status" >&2
+  exit 1
+fi
+
+matched=0
+for f in "${allowed_fprs[@]}"; do
+  if [[ "$signer_fpr" == "$f" ]]; then
+    matched=1
+    break
+  fi
+done
+if (( matched == 0 )); then
+  echo "Untrusted signer fingerprint for $script: $signer_fpr" >&2
+  exit 1
+fi
+
+bash -- "$workdir/script.sh" "$@"

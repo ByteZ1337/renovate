@@ -26,17 +26,17 @@
   },
   "customManagers": [
     {
-      "description": "ByteZ1337/setup-nu pins",
+      "description": "ByteZ1337/setup-mise pins",
       "customType": "regex",
       "managerFilePatterns": [
         "/(^|/)\\.github/workflows/[^/]+\\.ya?ml$/",
         "/(^|/)action\\.ya?ml$/"
       ],
       "matchStrings": [
-        "uses: (ByteZ1337/setup-nu@\\S+|\\./)\\s+(#.*\\s+)?with:\\s+version: ['\"]?(?<currentValue>\\d+\\.\\d+\\.\\d+)['\"]?\\s+sha256: (?<currentDigest>[0-9a-f]{64})"
+        "uses: ByteZ1337/setup-mise@\\S+\\s+(#.*\\s+)?with:\\s+version: ['\"]?(?<currentValue>v\\d+\\.\\d+\\.\\d+)['\"]?\\s+sha256: ['\"]?(?<currentDigest>[0-9a-f]{64})['\"]?"
       ],
       "datasourceTemplate": "github-release-attachments",
-      "depNameTemplate": "nushell/nushell"
+      "depNameTemplate": "jdx/mise"
     },
     {
       "description": "Root github flake inputs that follow a branch",
@@ -59,6 +59,26 @@
         "github-actions"
       ],
       "groupName": "github actions",
+      "semanticCommitScope": "ci"
+    },
+    {
+      "description": "own actions",
+      "matchPackageNames": [
+        "ByteZ1337/**"
+      ],
+      "minimumReleaseAge": null
+    },
+    {
+      "matchManagers": [
+        "mise"
+      ],
+      "groupName": "mise tools",
+      "semanticCommitScope": "ci"
+    },
+    {
+      "matchManagers": [
+        "rust-toolchain"
+      ],
       "semanticCommitScope": "ci"
     },
     {
