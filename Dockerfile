@@ -24,6 +24,13 @@ RUN for tool in "gh $GH_VERSION" "mise $MISE_VERSION" "nix $NIX_VERSION" "rust $
         install-tool "$1" "$2"; \
     done
 
+RUN --mount=type=bind,source=mise.toml,target=/tmp/nu/mise.toml \
+    --mount=type=bind,source=mise.lock,target=/tmp/nu/mise.lock \
+    --mount=type=secret,id=gh,env=GH_TOKEN \
+    GITHUB_TOKEN="$GH_TOKEN" MISE_SAFE=1 MISE_DATA_DIR=/tmp/mise-data mise -C /tmp/nu install --locked aqua:nushell/nushell \
+    && install -m 0755 "$(MISE_SAFE=1 MISE_DATA_DIR=/tmp/mise-data mise -C /tmp/nu which nu)" /usr/local/bin/nu \
+    && rm -rf /tmp/mise-data /root/.cache/mise /root/.local/state/mise
+
 RUN mkdir -m 0755 -p /etc/renovate/keys
 COPY --chmod=0755 scripts/run-signed /usr/local/bin/run-signed
 COPY --chmod=0644 keys/ /etc/renovate/keys/

@@ -27,6 +27,6 @@ runs:
         MIN_AGE: ${{ inputs.min-age }}
       run: |
         set -euo pipefail
-        MISE_SAFE=1 mise -C "$GITHUB_ACTION_PATH" install --locked
-        nu_bin="$(MISE_SAFE=1 mise -C "$GITHUB_ACTION_PATH" which nu)"
+        MISE_SAFE=1 mise -C "$GITHUB_ACTION_PATH/../.." install --locked aqua:nushell/nushell
+        nu_bin="$(MISE_SAFE=1 mise -C "$GITHUB_ACTION_PATH/../.." which nu)"
         "$nu_bin" "$GITHUB_ACTION_PATH/verify.nu" "$LOCKFILE" --min-age "$MIN_AGE"

@@ -2,13 +2,14 @@
 set -euo pipefail
 shopt -s inherit_errexit nullglob
 
-script="${1:?usage: run-signed <.renovate/script.sh> [args...]}"
+script="${1:?usage: run-signed <.renovate/script.(sh|nu)> [args...]}"
 shift
 
-if [[ ! "$script" =~ ^\.renovate/[A-Za-z0-9._-]+\.sh$ ]]; then
+if [[ ! "$script" =~ ^\.renovate/[A-Za-z0-9._-]+\.(sh|nu)$ ]]; then
   echo "Rejected script path: $script" >&2
   exit 1
 fi
+ext="${BASH_REMATCH[1]}"
 
 sig="$script.asc"
 if [[ -L .renovate || -L "$script" || -L "$sig" ]]; then
@@ -48,11 +49,11 @@ gnupghome="$workdir/gnupg"
 mkdir -p "$gnupghome"
 chmod 700 "$gnupghome"
 
-cp "$script" "$workdir/script.sh"
-cp "$sig" "$workdir/script.sh.asc"
+cp "$script" "$workdir/script.$ext"
+cp "$sig" "$workdir/script.$ext.asc"
 
 gpg --homedir "$gnupghome" --batch --quiet --import "${key_files[@]}"
-status="$(gpg --homedir "$gnupghome" --batch --status-fd=1 --verify "$workdir/script.sh.asc" "$workdir/script.sh")"
+status="$(gpg --homedir "$gnupghome" --batch --status-fd=1 --verify "$workdir/script.$ext.asc" "$workdir/script.$ext")"
 
 validsig="$(grep -E '^\[GNUPG:\] VALIDSIG [0-9A-F]{40} ' <<< "$status" || true)"
 signer_fpr="$(awk '{print $NF}' <<< "$validsig")"
@@ -74,4 +75,7 @@ if (( matched == 0 )); then
   exit 1
 fi
 
-bash -- "$workdir/script.sh" "$@"
+case "$ext" in
+  sh) bash -- "$workdir/script.sh" "$@" ;;
+  nu) nu --no-config-file "$workdir/script.nu" "$@" ;;
+esac
